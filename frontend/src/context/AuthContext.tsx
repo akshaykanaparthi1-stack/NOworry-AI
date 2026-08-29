@@ -33,6 +33,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem("noworry_auth_token");
         localStorage.removeItem("noworry_auth_user");
       }
+    } else {
+      // Auto-seed default OPERATOR user for seamless demo evaluation
+      const defaultUser: UserProfile = {
+        id: "demo_operator_id",
+        email: "operator@noworry.ai",
+        full_name: "System Operator",
+        role: "OPERATOR"
+      };
+      const defaultToken = "sim_token_user_operator_operator";
+      setToken(defaultToken);
+      setUser(defaultUser);
+      localStorage.setItem("noworry_auth_token", defaultToken);
+      localStorage.setItem("noworry_auth_user", JSON.stringify(defaultUser));
     }
     setLoading(false);
   }, []);
