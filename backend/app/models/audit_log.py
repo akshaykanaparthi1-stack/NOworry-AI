@@ -15,6 +15,12 @@ class AuditLog(Base):
     approval_status = Column(String(50), nullable=False, default="NOT_REQUIRED")
     execution_result = Column(String(50), nullable=False, default="SUCCESS")
     actor = Column(String(50), nullable=False, default="AI_AGENT") # AI_AGENT, HUMAN_OPERATOR
+    
+    # Authenticated user tracking
+    user_id = Column(String(100), nullable=True)
+    user_email = Column(String(255), nullable=True)
+    user_role = Column(String(50), nullable=True)
+    
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
     agent_run = relationship("AgentRun", back_populates="audit_logs")

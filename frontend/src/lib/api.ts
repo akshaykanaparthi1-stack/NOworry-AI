@@ -2,21 +2,52 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v
 
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
+  
+  // Attach token from localStorage if available
+  let token: string | null = null;
+  if (typeof window !== "undefined") {
+    token = localStorage.getItem("noworry_auth_token");
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
   const res = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
+    headers,
     cache: "no-store",
   });
 
+  if (res.status === 401 && typeof window !== "undefined" && !endpoint.includes("/auth/")) {
+    localStorage.removeItem("noworry_auth_token");
+    localStorage.removeItem("noworry_auth_user");
+    window.location.href = "/login";
+  }
+
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`API Error ${res.status}: ${errText}`);
+    let parsedErr = `API Error ${res.status}`;
+    try {
+      const jsonErr = JSON.parse(errText);
+      parsedErr = jsonErr.detail || parsedErr;
+    } catch {
+      parsedErr = errText || parsedErr;
+    }
+    throw new Error(parsedErr);
   }
 
   return res.json();
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: "ADMIN" | "ANALYST" | "OPERATOR";
+  created_at?: string;
 }
 
 export interface DashboardSummary {

@@ -38,17 +38,34 @@ export async function extensionFetch<T>(endpoint: string, options?: RequestInit)
   const settings = await getSettings();
   const url = `${settings.backendUrl}${endpoint}`;
   
+  // Retrieve token from extension storage if available
+  let token: string | null = null;
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+    const storedToken = await new Promise<string | null>((res) => {
+      chrome.storage.local.get(["authToken"], (data) => res(data.authToken || null));
+    });
+    token = storedToken;
+  }
+  
   const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       ...(options?.headers || {}),
     },
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`API Error ${res.status}: ${errText}`);
+    let parsedErr = `API Error ${res.status}`;
+    try {
+      const jsonErr = JSON.parse(errText);
+      parsedErr = jsonErr.detail || parsedErr;
+    } catch {
+      parsedErr = errText || parsedErr;
+    }
+    throw new Error(parsedErr);
   }
 
   return res.json();

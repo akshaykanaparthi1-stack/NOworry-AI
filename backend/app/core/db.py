@@ -23,6 +23,12 @@ engine = create_engine(db_url, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+def init_db_schema():
+    from backend.app.models import (
+        Customer, Transaction, RecoveryOpportunity, RecoveryAction, AIPrediction, AgentRun, AuditLog, Profile
+    )
+    Base.metadata.create_all(bind=engine)
+
 def get_db():
     db = SessionLocal()
     try:

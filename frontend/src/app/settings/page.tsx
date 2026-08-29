@@ -1,18 +1,57 @@
 "use client";
 
 import AppLayout from "@/components/layout/AppLayout";
-import { Shield, Cpu } from "lucide-react";
+import { Shield, Cpu, User, LogOut, Key } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SettingsPage() {
+  const { user, logout } = useAuth();
+
   return (
     <AppLayout>
       <div className="space-y-6 max-w-4xl mx-auto">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">System Settings & Configuration</h2>
-          <p className="text-sm text-slate-500 mt-1">Configure business rules, model parameters, and governance approval thresholds.</p>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Account & System Configuration</h2>
+          <p className="text-sm text-slate-500 mt-1">Manage user profile, business governance rules, and agent model configuration.</p>
         </div>
 
         <div className="space-y-6">
+          {/* User Profile Section */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center space-x-2 text-blue-600 font-bold text-sm">
+                <User className="w-4 h-4" />
+                <span>Authenticated User Profile</span>
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded border border-rose-200 transition"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-1" />
+                Sign Out
+              </button>
+            </div>
+
+            {user && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 block font-semibold">Full Name</span>
+                  <span className="text-slate-900 font-bold text-sm block mt-0.5">{user.full_name}</span>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 block font-semibold">Work Email</span>
+                  <span className="text-slate-900 font-bold text-sm block mt-0.5">{user.email}</span>
+                </div>
+
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <span className="text-blue-900 block font-semibold">Assigned Role (RBAC)</span>
+                  <span className="text-blue-950 font-black text-sm block mt-0.5 uppercase">{user.role}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Governance Policies */}
           <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center space-x-2 text-blue-600 font-bold text-sm border-b border-slate-200 pb-3">
@@ -57,7 +96,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
                 <span className="text-slate-500 block font-semibold">Active Classification Model</span>
-                <span className="text-slate-900 font-bold text-sm">RandomForest (Scikit-Learn)</span>
+                <span className="text-slate-900 font-bold text-sm">GradientBoostingClassifier</span>
               </div>
 
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">

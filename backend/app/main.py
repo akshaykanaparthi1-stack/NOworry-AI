@@ -4,13 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from backend.app.core.config import settings
-from backend.app.core.db import engine, Base
+from backend.app.core.db import engine, Base, init_db_schema
 from backend.app.api.v1.router import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure database schema is initialized
-    Base.metadata.create_all(bind=engine)
+    # Ensure all DB tables including Profile are created
+    init_db_schema()
     yield
 
 app = FastAPI(

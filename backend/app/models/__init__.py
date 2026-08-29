@@ -5,6 +5,7 @@ from backend.app.models.action import RecoveryAction
 from backend.app.models.prediction import AIPrediction
 from backend.app.models.agent_run import AgentRun
 from backend.app.models.audit_log import AuditLog
+from backend.app.models.profile import Profile
 
 __all__ = [
     "Customer",
@@ -13,5 +14,6 @@ __all__ = [
     "RecoveryAction",
     "AIPrediction",
     "AgentRun",
-    "AuditLog"
+    "AuditLog",
+    "Profile"
 ]

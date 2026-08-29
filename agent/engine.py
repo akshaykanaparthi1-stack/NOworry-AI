@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from backend.app.models.transaction import Transaction
 from backend.app.models.opportunity import RecoveryOpportunity
 from backend.app.models.agent_run import AgentRun
+from backend.app.models.profile import Profile
 from agent.tools.transaction_tools import get_transaction_details
 from agent.tools.customer_tools import get_customer_history
 from agent.tools.analysis_tools import analyze_failure_reason
@@ -36,7 +37,12 @@ class AutonomousAgentEngine:
     def __init__(self, db: Session):
         self.db = db
 
-    def run_agent_workflow(self, transaction_code_or_id: str, human_approved: bool = False) -> Dict[str, Any]:
+    def run_agent_workflow(
+        self,
+        transaction_code_or_id: str,
+        human_approved: bool = False,
+        user: Optional[Profile] = None
+    ) -> Dict[str, Any]:
         """
         Executes or resumes the 11-step autonomous revenue recovery agent workflow.
         """
@@ -229,6 +235,10 @@ class AutonomousAgentEngine:
             )
 
             # Step 11: Create Audit Log
+            u_id = user.auth_user_id if user else None
+            u_email = user.email if user else None
+            u_role = user.role if user else None
+            
             audit_res = create_audit_log(
                 self.db,
                 agent_run_id=agent_run.id,
@@ -237,13 +247,16 @@ class AutonomousAgentEngine:
                 reason=action_sel["rationale"],
                 approval_status="APPROVED_BY_HUMAN" if human_approved else "AUTO_APPROVED",
                 execution_result=exec_res["status"],
-                actor="HUMAN_OPERATOR" if human_approved else "AI_AGENT"
+                actor="HUMAN_OPERATOR" if human_approved else "AI_AGENT",
+                user_id=u_id,
+                user_email=u_email,
+                user_role=u_role
             )
             record_step(
                 "CREATE_AUDIT_LOG",
                 "completed",
                 audit_res,
-                f"Created immutable audit log {audit_res['audit_log_id']}."
+                f"Created immutable audit log {audit_res['audit_log_id']} for user {u_email or 'SYSTEM'}."
             )
 
             agent_run.status = "COMPLETED"

@@ -12,6 +12,9 @@ class AuditLogItemResponse(BaseModel):
     approval_status: str
     execution_result: str
     actor: str
+    user_id: Optional[str] = None
+    user_email: Optional[str] = None
+    user_role: Optional[str] = None
     timestamp: str
 
 class AuditLogListResponse(BaseModel):

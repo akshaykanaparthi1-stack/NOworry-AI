@@ -2,7 +2,7 @@ import pytest
 import os
 import pandas as pd
 from sqlalchemy import inspect
-from backend.app.core.db import engine, SessionLocal
+from backend.app.core.db import engine, SessionLocal, init_db_schema
 from backend.app.models.customer import Customer
 from backend.app.models.transaction import Transaction
 from backend.app.models.opportunity import RecoveryOpportunity
@@ -10,11 +10,15 @@ from backend.app.models.action import RecoveryAction
 from backend.app.models.prediction import AIPrediction
 from backend.app.models.agent_run import AgentRun
 from backend.app.models.audit_log import AuditLog
+from backend.app.models.profile import Profile
 from ml.generate_dataset import generate_synthetic_dataset
+
+# Ensure database schema initialized
+init_db_schema()
 
 def test_database_tables_and_entities():
     """
-    Verifies that all 7 required entities exist in database metadata with primary and foreign keys.
+    Verifies that all required entities exist in database metadata with primary and foreign keys.
     """
     inspector = inspect(engine)
     tables = inspector.get_table_names()
@@ -26,7 +30,8 @@ def test_database_tables_and_entities():
         "recovery_actions",
         "ai_predictions",
         "agent_runs",
-        "audit_logs"
+        "audit_logs",
+        "profiles"
     ]
     
     for t in expected_tables:

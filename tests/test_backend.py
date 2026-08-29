@@ -12,6 +12,31 @@ def test_root_endpoint():
     data = response.json()
     assert data["product"] == "NoWorry AI — Autonomous Revenue Recovery Agent"
 
+def test_auth_signup_login():
+    # 1. Signup
+    signup_data = {
+        "full_name": "Test Operator",
+        "email": "testoperator@noworry.ai",
+        "password": "password123",
+        "role": "OPERATOR"
+    }
+    response = client.post("/api/v1/auth/signup", json=signup_data)
+    assert response.status_code == 200
+    res = response.json()
+    assert "access_token" in res
+
+    # 2. Login
+    login_data = {
+        "email": "testoperator@noworry.ai",
+        "password": "password123"
+    }
+    log_resp = client.post("/api/v1/auth/login", json=login_data)
+    assert log_resp.status_code == 200
+    log_data = log_resp.json()
+    assert "access_token" in log_data
+    assert log_data["user"]["email"] == "testoperator@noworry.ai"
+    assert log_data["user"]["role"] == "OPERATOR"
+
 def test_dashboard_summary():
     response = client.get("/api/v1/dashboard/summary")
     assert response.status_code == 200
@@ -28,7 +53,8 @@ def test_opportunities_list():
 
 def test_tx_10492_agent_run():
     # Trigger run on demo transaction TX-10492 (Amount = 9,999 INR -> Gated by Policy for approval)
-    response = client.post("/api/v1/agent/run", json={"transaction_code_or_id": "TX-10492", "human_approved": False})
+    headers = {"Authorization": "Bearer sim_token_user_operator_operator"}
+    response = client.post("/api/v1/agent/run", json={"transaction_code_or_id": "TX-10492", "human_approved": False}, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] in ["WAITING_APPROVAL", "COMPLETED"]
@@ -36,10 +62,16 @@ def test_tx_10492_agent_run():
 
     # Now approve
     run_id = data["agent_run_id"]
-    app_response = client.post("/api/v1/agent/approve", json={"agent_run_id": run_id, "approved": True})
+    app_response = client.post("/api/v1/agent/approve", json={"agent_run_id": run_id, "approved": True}, headers=headers)
     assert app_response.status_code == 200
     app_data = app_response.json()
     assert app_data["status"] == "COMPLETED"
+
+def test_rbac_authorization():
+    # Analyst role should not be able to trigger execution actions requiring OPERATOR/ADMIN
+    analyst_headers = {"Authorization": "Bearer sim_token_user_analyst_analyst"}
+    resp = client.post("/api/v1/actions/execute", json={"opportunity_id": "opp1", "action_type": "RETRY_PAYMENT", "transaction_id": "tx1"}, headers=analyst_headers)
+    assert resp.status_code == 403
 
 def test_roi_calculator():
     req_data = {
