@@ -15,10 +15,38 @@
     color: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
+
+  /* Force all border boxes, buttons, inputs, cards, badges, modals, and containers into perfect squares with no curved edges */
+  *,
+  *::before,
+  *::after,
+  html,
+  body,
+  div,
+  span,
+  button,
+  input,
+  select,
+  textarea,
+  a,
+  table,
+  th,
+  td,
+  tr,
+  header,
+  footer,
+  aside,
+  section,
+  main,
+  article,
+  nav {
+    border-radius: 0px !important;
+  }
 }
 
 .glass-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  border-radius: 0px !important;
 }
