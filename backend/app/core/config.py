@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./noworry_ai.db"
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     
+    # Supabase Credentials & Settings (Loaded from .env at runtime)
+    SUPABASE_URL: Optional[str] = "https://qtulrhuecnrlntbgusqt.supabase.co"
+    SUPABASE_PUBLISHABLE_KEY: Optional[str] = None
+    SUPABASE_SECRET_KEY: Optional[str] = None
+    SUPABASE_JWKS_URL: Optional[str] = "https://qtulrhuecnrlntbgusqt.supabase.co/auth/v1/.well-known/jwks.json"
+    
     LLM_PROVIDER: str = "deterministic"
     GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
