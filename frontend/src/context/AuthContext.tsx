@@ -3,6 +3,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { fetchApi, UserProfile } from "@/lib/api";
 
+const DEFAULT_DEMO_USER: UserProfile = {
+  id: "demo_operator_id",
+  email: "operator@noworry.ai",
+  full_name: "System Operator",
+  role: "OPERATOR"
+};
+const DEFAULT_DEMO_TOKEN = "sim_token_user_operator_operator";
+
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
@@ -16,38 +24,29 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<UserProfile | null>(DEFAULT_DEMO_USER);
+  const [token, setToken] = useState<string | null>(DEFAULT_DEMO_TOKEN);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Restore session from localStorage on mount
-    const savedToken = localStorage.getItem("noworry_auth_token");
-    const savedUserStr = localStorage.getItem("noworry_auth_user");
+    // Restore session from localStorage on mount if saved
+    if (typeof window !== "undefined") {
+      const savedToken = localStorage.getItem("noworry_auth_token");
+      const savedUserStr = localStorage.getItem("noworry_auth_user");
 
-    if (savedToken && savedUserStr) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUserStr));
-      } catch (e) {
-        localStorage.removeItem("noworry_auth_token");
-        localStorage.removeItem("noworry_auth_user");
+      if (savedToken && savedUserStr) {
+        try {
+          setToken(savedToken);
+          setUser(JSON.parse(savedUserStr));
+        } catch (e) {
+          localStorage.removeItem("noworry_auth_token");
+          localStorage.removeItem("noworry_auth_user");
+        }
+      } else {
+        localStorage.setItem("noworry_auth_token", DEFAULT_DEMO_TOKEN);
+        localStorage.setItem("noworry_auth_user", JSON.stringify(DEFAULT_DEMO_USER));
       }
-    } else {
-      // Auto-seed default OPERATOR user for seamless demo evaluation
-      const defaultUser: UserProfile = {
-        id: "demo_operator_id",
-        email: "operator@noworry.ai",
-        full_name: "System Operator",
-        role: "OPERATOR"
-      };
-      const defaultToken = "sim_token_user_operator_operator";
-      setToken(defaultToken);
-      setUser(defaultUser);
-      localStorage.setItem("noworry_auth_token", defaultToken);
-      localStorage.setItem("noworry_auth_user", JSON.stringify(defaultUser));
     }
-    setLoading(false);
   }, []);
 
   const login = async (email: string, pass: string) => {
