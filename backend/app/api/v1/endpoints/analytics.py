@@ -1,3 +1,5 @@
+import os
+import json
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -14,7 +16,8 @@ router = APIRouter()
 @router.get("/metrics", response_model=Dict[str, Any])
 def get_analytics_metrics(db: Session = Depends(get_db)):
     """
-    Detailed analytics breakdown across failure reasons, payment methods, customer segments, and ML recovery accuracy.
+    Detailed analytics breakdown across failure reasons, payment methods, customer segments,
+    and REAL ML model evaluation metrics (Accuracy, Precision, Recall, F1, ROC-AUC).
     """
     # 1. Total KPI totals
     total_at_risk = db.query(func.sum(RecoveryOpportunity.amount)).scalar() or 0.0
@@ -43,11 +46,22 @@ def get_analytics_metrics(db: Session = Depends(get_db)):
         {"reason": r[0], "count": r[1], "expected_recovery": round(r[2] or 0.0, 2)} for r in fr_stats
     ]
 
+    # 4. Read Real ML Model Evaluation Metrics from ml/metrics.json
+    ml_performance = {}
+    metrics_file = "ml/metrics.json"
+    if os.path.exists(metrics_file):
+        try:
+            with open(metrics_file, "r") as f:
+                ml_performance = json.load(f)
+        except Exception:
+            pass
+
     return {
         "revenue_at_risk": round(total_at_risk, 2),
         "total_recovered": round(total_recovered, 2),
         "avg_recovery_value": round(avg_recovery_val, 2),
         "overall_recovery_rate": round((total_recovered / total_at_risk * 100.0) if total_at_risk > 0 else 0.0, 1),
         "by_payment_method": by_payment_method,
-        "by_failure_reason": by_failure_reason
+        "by_failure_reason": by_failure_reason,
+        "ml_performance": ml_performance
     }

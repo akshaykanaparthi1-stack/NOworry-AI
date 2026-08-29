@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from ml.predictor import predict_recovery
+from ml.predict import predict_recovery
 
 def predict_recovery_probability(feature_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
