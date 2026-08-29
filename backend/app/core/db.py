@@ -7,6 +7,11 @@ db_url = settings.DATABASE_URL
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
+# Check for placeholder password in DATABASE_URL
+if "YOUR_SUPABASE_PASSWORD" in db_url or "YOUR-SUPABASE-PASSWORD" in db_url:
+    print("[WARNING] Placeholder password found in DATABASE_URL. Falling back to local SQLite database.")
+    db_url = "sqlite:///./noworry_ai.db"
+
 connect_args = {}
 engine_kwargs = {"echo": False}
 
@@ -24,10 +29,18 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 def init_db_schema():
+    global engine, SessionLocal, Base
     from backend.app.models import (
         Customer, Transaction, RecoveryOpportunity, RecoveryAction, AIPrediction, AgentRun, AuditLog, Profile
     )
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"[WARNING] Database connection error: {e}. Falling back to SQLite database...")
+        fallback_url = "sqlite:///./noworry_ai.db"
+        engine = create_engine(fallback_url, connect_args={"check_same_thread": False})
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
