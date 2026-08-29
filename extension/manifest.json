@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "NoWorry AI — Revenue Recovery Agent",
+  "version": "1.0.0",
+  "description": "Autonomous AI agent extension for revenue leakage detection, ML recovery prediction, and simulated recovery actions.",
+  "icons": {
+    "16": "public/icons/icon16.png",
+    "48": "public/icons/icon48.png",
+    "128": "public/icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "dist/src/popup/index.html",
+    "default_title": "NoWorry AI — Revenue Recovery Agent"
+  },
+  "background": {
+    "service_worker": "dist/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:3000/demo-merchant*",
+        "http://127.0.0.1:3000/demo-merchant*"
+      ],
+      "js": ["dist/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ]
+}

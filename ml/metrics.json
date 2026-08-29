@@ -1,0 +1,76 @@
+{
+  "best_model": "GradientBoosting",
+  "dataset_size": 50000,
+  "train_size": 40000,
+  "test_size": 10000,
+  "best_metrics": {
+    "accuracy": 0.7791,
+    "precision": 0.8087239583333333,
+    "recall": 0.893540497770105,
+    "f1_score": 0.8490192057959128,
+    "roc_auc": 0.8199565349896448,
+    "confusion_matrix": [
+      [
+        1580,
+        1469
+      ],
+      [
+        740,
+        6211
+      ]
+    ]
+  },
+  "models_evaluated": {
+    "RandomForest": {
+      "accuracy": 0.7769,
+      "precision": 0.8053830227743272,
+      "recall": 0.8954107322687384,
+      "f1_score": 0.8480141699025819,
+      "roc_auc": 0.8176725906723061,
+      "confusion_matrix": [
+        [
+          1545,
+          1504
+        ],
+        [
+          727,
+          6224
+        ]
+      ]
+    },
+    "GradientBoosting": {
+      "accuracy": 0.7791,
+      "precision": 0.8087239583333333,
+      "recall": 0.893540497770105,
+      "f1_score": 0.8490192057959128,
+      "roc_auc": 0.8199565349896448,
+      "confusion_matrix": [
+        [
+          1580,
+          1469
+        ],
+        [
+          740,
+          6211
+        ]
+      ]
+    },
+    "LogisticRegression": {
+      "accuracy": 0.7792,
+      "precision": 0.8099594824205986,
+      "recall": 0.8915263990792691,
+      "f1_score": 0.848787837282564,
+      "roc_auc": 0.8211024942011973,
+      "confusion_matrix": [
+        [
+          1595,
+          1454
+        ],
+        [
+          754,
+          6197
+        ]
+      ]
+    }
+  }
+}
