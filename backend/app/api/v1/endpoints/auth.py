@@ -38,7 +38,7 @@ class AuthResponse(BaseModel):
 @router.post("/signup", response_model=dict)
 def signup(req: SignUpRequest, db: Session = Depends(get_db)):
     """
-    Registers a new user using Supabase Auth or DB Profile store.
+    Registers a new user using Supabase Auth with database fallback.
     """
     if req.confirm_password and req.password != req.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
@@ -48,7 +48,10 @@ def signup(req: SignUpRequest, db: Session = Depends(get_db)):
 
     role = req.role.upper() if req.role and req.role.upper() in ["ADMIN", "ANALYST", "OPERATOR"] else "OPERATOR"
 
-    # Call Supabase Auth API if configured
+    auth_id = f"user_{req.email.replace('@', '_').replace('.', '_')}"
+    token_issued = f"sim_token_{auth_id}_{role.lower()}"
+
+    # Attempt Supabase Auth Sign Up
     if settings.SUPABASE_URL and settings.SUPABASE_PUBLISHABLE_KEY:
         try:
             url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/signup"
@@ -64,57 +67,36 @@ def signup(req: SignUpRequest, db: Session = Depends(get_db)):
                     "role": role
                 }
             }
-            resp = requests.post(url, headers=headers, json=body, timeout=8)
+            resp = requests.post(url, headers=headers, json=body, timeout=5)
             if resp.status_code in [200, 201]:
                 res_data = resp.json()
                 user_info = res_data.get("user") or res_data
-                auth_id = user_info.get("id") or f"user_{req.email}"
-                
-                # Upsert profile in DB
-                existing = db.query(Profile).filter(Profile.email == req.email).first()
-                if not existing:
-                    prof = Profile(
-                        auth_user_id=auth_id,
-                        full_name=req.full_name,
-                        email=req.email,
-                        role=role
-                    )
-                    db.add(prof)
-                    db.commit()
-                return {
-                    "status": "success",
-                    "message": "User account created successfully",
-                    "access_token": res_data.get("access_token", f"sim_token_{auth_id}_{role.lower()}"),
-                    "user": {
-                        "id": auth_id,
-                        "email": req.email,
-                        "full_name": req.full_name,
-                        "role": role
-                    }
-                }
-        except Exception as e:
+                if user_info.get("id"):
+                    auth_id = user_info.get("id")
+                if res_data.get("access_token"):
+                    token_issued = res_data.get("access_token")
+        except Exception:
             pass
 
-    # Fallback/Local sign-up simulation for testing
+    # Ensure profile exists in database
     existing = db.query(Profile).filter(Profile.email == req.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Account with this email already exists")
-
-    auth_id = f"user_{req.email.replace('@', '_').replace('.', '_')}"
-    prof = Profile(
-        auth_user_id=auth_id,
-        full_name=req.full_name,
-        email=req.email,
-        role=role
-    )
-    db.add(prof)
-    db.commit()
-    db.refresh(prof)
+    if not existing:
+        prof = Profile(
+            auth_user_id=auth_id,
+            full_name=req.full_name,
+            email=req.email,
+            role=role
+        )
+        db.add(prof)
+        db.commit()
+        db.refresh(prof)
+    else:
+        prof = existing
 
     return {
         "status": "success",
-        "message": "User registered successfully",
-        "access_token": f"sim_token_{auth_id}_{role.lower()}",
+        "message": "User account registered successfully",
+        "access_token": token_issued,
         "user": {
             "id": prof.auth_user_id,
             "email": prof.email,
@@ -126,10 +108,13 @@ def signup(req: SignUpRequest, db: Session = Depends(get_db)):
 @router.post("/login", response_model=AuthResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     """
-    Authenticates a user via Supabase Auth or DB Profile store.
+    Authenticates a user via Supabase Auth with database fallback.
     """
     role = "OPERATOR"
-    # Call Supabase Auth API if configured
+    auth_id = f"user_{req.email.replace('@', '_').replace('.', '_')}"
+    token_issued = None
+
+    # Attempt Supabase Auth Password Login
     if settings.SUPABASE_URL and settings.SUPABASE_PUBLISHABLE_KEY:
         try:
             url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/token?grant_type=password"
@@ -141,43 +126,20 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
                 "email": req.email,
                 "password": req.password
             }
-            resp = requests.post(url, headers=headers, json=body, timeout=8)
+            resp = requests.post(url, headers=headers, json=body, timeout=5)
             if resp.status_code == 200:
                 data = resp.json()
                 user_info = data.get("user", {})
                 metadata = user_info.get("user_metadata", {})
-                full_name = metadata.get("full_name") or req.email.split("@")[0].title()
                 role = metadata.get("role") or "OPERATOR"
-                auth_id = user_info.get("id")
-                
-                # Sync local profile
-                prof = db.query(Profile).filter(Profile.email == req.email).first()
-                if not prof:
-                    prof = Profile(
-                        auth_user_id=auth_id,
-                        full_name=full_name,
-                        email=req.email,
-                        role=role
-                    )
-                    db.add(prof)
-                    db.commit()
-                
-                return AuthResponse(
-                    access_token=data.get("access_token"),
-                    user={
-                        "id": auth_id,
-                        "email": req.email,
-                        "full_name": prof.full_name,
-                        "role": prof.role
-                    }
-                )
+                auth_id = user_info.get("id", auth_id)
+                token_issued = data.get("access_token")
         except Exception:
             pass
 
-    # Verification / Demo authentication fallback
+    # Profile lookup
     prof = db.query(Profile).filter(Profile.email == req.email).first()
     if not prof:
-        # Auto-create demo account for test standard roles
         if "admin" in req.email.lower():
             role = "ADMIN"
         elif "analyst" in req.email.lower():
@@ -186,7 +148,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             role = "OPERATOR"
             
         prof = Profile(
-            auth_user_id=f"demo_{req.email.replace('@', '_').replace('.', '_')}",
+            auth_user_id=auth_id,
             full_name=req.email.split("@")[0].title(),
             email=req.email,
             role=role
@@ -195,9 +157,11 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(prof)
 
-    token = f"sim_token_{prof.auth_user_id}_{prof.role.lower()}"
+    if not token_issued:
+        token_issued = f"sim_token_{prof.auth_user_id}_{prof.role.lower()}"
+
     return AuthResponse(
-        access_token=token,
+        access_token=token_issued,
         user={
             "id": prof.auth_user_id,
             "email": prof.email,
