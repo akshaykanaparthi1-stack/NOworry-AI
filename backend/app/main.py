@@ -21,12 +21,20 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configurable CORS middleware for production security
-origins = settings.cors_origins if settings.ENVIRONMENT == "production" else ["*"]
+# Explicit CORS Origins for browser compatibility with credentials
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+if settings.cors_origins:
+    cors_origins.extend(settings.cors_origins)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=list(set(cors_origins)),
+    allow_origin_regex=r"chrome-extension://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,4 +55,4 @@ def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.app.main:app", host=settings.HOST, port=settings.PORT, reload=(settings.ENVIRONMENT == "development"))
+    uvicorn.run("backend.app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
