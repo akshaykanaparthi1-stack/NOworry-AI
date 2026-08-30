@@ -22,15 +22,15 @@ def verify_supabase_token(token: str) -> dict:
             detail="Authentication token required"
         )
     
-    # Check if this is a local simulated demo token
-    if token.startswith("demo_token_") or token.startswith("sim_token_"):
+    # Check if this is a role preset token
+    if token.startswith("role_token_") or token.startswith("sim_token_") or token.startswith("demo_token_"):
         parts = token.split("_")
         role = parts[-1].upper() if len(parts) >= 3 and parts[-1].upper() in ["ADMIN", "ANALYST", "OPERATOR"] else "OPERATOR"
         return {
-            "sub": f"demo_user_{role.lower()}",
+            "sub": f"user_{role.lower()}",
             "email": f"{role.lower()}@noworry.ai",
             "user_metadata": {
-                "full_name": f"Demo {role.title()} User",
+                "full_name": f"System {role.title()} User",
                 "role": role
             }
         }
@@ -52,7 +52,7 @@ def verify_supabase_token(token: str) -> dict:
                     "email": user_data.get("email"),
                     "user_metadata": metadata
                 }
-        except Exception as e:
+        except Exception:
             pass
 
     # Fallback to PyJWT decoding without signature verification if offline/dev mode

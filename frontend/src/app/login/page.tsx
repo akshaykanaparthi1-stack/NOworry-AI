@@ -110,10 +110,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Demo Quick Login Presets */}
+        {/* Quick Role Accounts */}
         <div className="pt-2 border-t border-slate-100 space-y-2">
           <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block text-center">
-            Demo Quick Login Roles
+            System Role Accounts (ADMIN, OPERATOR, ANALYST)
           </span>
           <div className="grid grid-cols-3 gap-2 text-[11px]">
             <button

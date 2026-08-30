@@ -64,7 +64,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onClose,
           </div>
 
           <div className="flex items-center justify-between py-1">
-            <span className="text-slate-700 font-semibold">Demo / Simulation Mode</span>
+            <span className="text-slate-700 font-semibold">Simulation Mode</span>
             <input
               type="checkbox"
               checked={demoMode}

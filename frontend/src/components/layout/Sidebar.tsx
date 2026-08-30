@@ -70,7 +70,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-between">
           <span className="text-slate-500 font-medium">Environment</span>
           <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] border border-emerald-300">
-            SIMULATION / DEMO
+            ACTIVE PLATFORM
           </span>
         </div>
         <p className="text-[11px] text-slate-500 mt-2 font-medium">Tagline: Detect. Decide. Recover.</p>

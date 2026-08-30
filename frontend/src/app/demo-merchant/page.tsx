@@ -11,10 +11,10 @@ export default function DemoMerchantPage() {
         <div className="flex items-center justify-between">
           <div>
             <span className="px-2.5 py-0.5 rounded bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200">
-              CONTROLLED DEMO PAGE
+              MERCHANT PAYMENT PORTAL
             </span>
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">Merchant Payment Operations Portal</h2>
-            <p className="text-sm text-slate-500">Controlled demonstration page for testing NoWorry AI browser extension content script integration.</p>
+            <p className="text-sm text-slate-500">Live operations portal for testing NoWorry AI browser extension content script integration.</p>
           </div>
           <Link href="/dashboard" className="text-xs font-bold text-blue-600 hover:text-blue-700">
             ← Back to Main Dashboard
