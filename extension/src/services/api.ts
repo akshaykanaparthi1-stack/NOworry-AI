@@ -1,8 +1,8 @@
 import { DashboardSummary, OpportunityList, OpportunityItem, AgentRunResult, ExtensionSettings } from "../types";
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  backendUrl: "http://localhost:8000/api/v1",
-  webAppUrl: "http://localhost:3000",
+  backendUrl: "https://noworry-ai-api.onrender.com/api/v1",
+  webAppUrl: "https://noworry-ai.vercel.app",
   notificationsEnabled: true,
   demoMode: true,
 };

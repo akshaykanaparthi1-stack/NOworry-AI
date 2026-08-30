@@ -19,6 +19,8 @@
   "content_scripts": [
     {
       "matches": [
+        "https://noworry-ai.vercel.app/demo-merchant*",
+        "https://*.vercel.app/demo-merchant*",
         "http://localhost:3000/demo-merchant*",
         "http://127.0.0.1:3000/demo-merchant*"
       ],
@@ -32,6 +34,10 @@
     "notifications"
   ],
   "host_permissions": [
+    "https://noworry-ai-api.onrender.com/*",
+    "https://*.onrender.com/*",
+    "https://noworry-ai.vercel.app/*",
+    "https://*.vercel.app/*",
     "http://localhost:8000/*",
     "http://127.0.0.1:8000/*",
     "http://localhost:3000/*",
