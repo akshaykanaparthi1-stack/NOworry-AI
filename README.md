@@ -2,7 +2,8 @@
 
 > **Tagline:** Detect. Decide. Recover.  
 > **Product Name:** NoWorry AI — Autonomous Revenue Recovery Agent  
-> **Architecture:** Full-Stack Enterprise SaaS + Manifest V3 Browser Extension  
+> **Category:** Track 03: AI Revenue Recovery  
+> **Architecture:** Full-Stack Enterprise SaaS (Next.js 14 + FastAPI + Supabase/PostgreSQL) + Manifest V3 Browser Extension  
 
 ---
 
@@ -18,21 +19,51 @@ Traditional recovery methods rely on manual support emails, static dunning sched
 
 ---
 
-## 2. Solution
+## 2. Solution & Track 03 Alignment
 
-**NoWorry AI** is an autonomous revenue recovery platform that combines machine learning predictions, structured tool-using AI agents, governance policy gating, and an immutable audit trail. Rather than simply reporting lost revenue, NoWorry AI autonomously investigates payment failures, calculates recovery probabilities, determines optimal intervention strategies, executes sandboxed recoveries, and logs audit trails.
+**NoWorry AI** is an autonomous revenue recovery platform built for **Track 03: AI Revenue Recovery**. It combines machine learning predictions (`GradientBoostingClassifier`), structured tool-using AI agents, governance policy gating, safe bounded retries, and an immutable audit trail.
+
+NoWorry AI operates in both **Single-Transaction Recovery Mode** and **Autonomous Batch Revenue Recovery Mode** (processing 100+ failed transactions in a single orchestrated workflow).
 
 ---
 
 ## 3. Product Overview
 
 The NoWorry AI ecosystem consists of two primary operational interfaces connected to a central FastAPI engine:
-1. **Executive Web Dashboard (Next.js 14):** High-level KPI monitoring, opportunity grids, ML detail views, AI agent visual stepper, ROI simulator, and audit log viewer.
+1. **Executive Web Dashboard (Next.js 14):** High-level KPI monitoring, **Batch Revenue Recovery (`/batch-recovery`)**, opportunity grids, ML detail views, AI agent visual stepper, ROI simulator, and audit log viewer.
 2. **Browser Extension (Manifest V3 for Chrome & Edge):** Compact toolbar popup for operational monitoring, right-click context menu analysis, desktop notifications, and controlled merchant page integration (`/demo-merchant`).
 
 ---
 
-## 4. Architecture
+## 4. Key Track 03 Features
+
+### 4.1. Autonomous Batch Revenue Recovery (`/batch-recovery`)
+- Process multiple failed/recoverable transactions in one structured batch workflow (e.g. 100 transactions).
+- Calculates aggregated batch-level metrics: Transactions Analyzed, Revenue at Risk, Expected Recovery, Actual Recovered Money, Recovery Rate %, and Escalations.
+
+### 4.2. Expected Recovery vs. Actual Money Recovered
+- **Expected Recovery:** $Amount \times Recovery\_Probability$ (ML Predictive Score).
+- **Actual Recovered:** Empirical verified funds recovered upon successful action execution.
+- Strict architectural distinction ($EXPECTED\_RECOVERY \neq ACTUAL\_RECOVERY$) enforced across Database, Backend APIs, Batch Engine, and UI.
+
+### 4.3. Safe Bounded Retries & Stopping Rules
+- Maximum recovery attempts capped per transaction (default: `3`, configurable via `MAX_RECOVERY_ATTEMPTS`).
+- Halts retries upon success or when reaching max attempts, triggering an **`ESCALATED`** state for manual operator review. Never creates an infinite retry loop.
+
+### 4.4. Risk-Based Opportunity Prioritization
+- Ranks recovery opportunities by Expected Recovery ($Amount \times Probability$), placing highest recoverable value first.
+
+### 4.5. Human-in-the-Loop Policy Governance
+- Automatic execution for low-value/high-confidence retries ($<₹1,000$).
+- Human operator approval gating for medium-value ($₹1,000–₹10,000$) or policy-flagged transactions.
+- Escalation to operator for high-value ($>₹10,000$) or max-retry-limit transactions.
+
+### 4.6. Immutable Audit Trail
+- Logs `batch_id`, `transaction_id`, `ml_probability`, `expected_recovery`, `actual_recovered_amount`, `policy_decision`, `approval_status`, `escalation_status`, `actor`, and timestamps.
+
+---
+
+## 5. Architecture
 
 ```
                   +-----------------------------------+-----------------------------------+
@@ -51,7 +82,7 @@ The NoWorry AI ecosystem consists of two primary operational interfaces connecte
                                                       v
                                   +---------------------------------------+
                                   |       Autonomous AI Agent Engine      |
-                                  |  (11-Step State Machine & 10 Tools)   |
+                                  |   (Single-Tx & Batch Recovery Engines)|
                                   +----+--------------+--------------+----+
                                        |              |              |
                                        v              v              v
@@ -63,150 +94,93 @@ The NoWorry AI ecosystem consists of two primary operational interfaces connecte
                                        \              |              /
                                         v             v             v
                                   +---------------------------------------+
-                                  |            SQLite Database            |
-                                  |   (noworry_ai.db — 7 ORM Tables)      |
+                                  |      Supabase / SQLite Database       |
+                                  |      (noworry_ai.db — 8 ORM Tables)   |
                                   +---------------------------------------+
 ```
 
 ---
 
-## 5. Features
+## 6. Batch Agent Workflow (12 Steps)
 
-- **Real-Time Revenue Leakage Detection:** Automated identification of failed transactions.
-- **ML Recovery Probability Prediction:** Empirical recovery scoring for every transaction.
-- **Expected Recovery Calculation:** Probability-adjusted recoverable value ($amount \times probability$).
-- **Structured 11-Step Agent Execution:** Transparent step-by-step tool invocation visualizer.
-- **Enterprise Governance Policy Gating:** Automatic execution for $<₹1,000$, human operator approval required for $₹1,000–₹10,000$, mandatory escalation for $>₹10,000$.
-- **Formula-Driven ROI Impact Simulator:** Interactive parameters and side-by-side baseline vs AI comparison chart.
-- **Immutable Audit Trail:** Complete event history tracking actors, timestamps, and execution results.
-
----
-
-## 6. AI Agent Architecture
-
-The NoWorry AI Agent executes an 11-step structured workflow:
-1. `DETECT_REVENUE_LOSS`: Identify transaction failure & amount at risk.
-2. `INVESTIGATE_TRANSACTION`: Retrieve transaction metadata & gateway status.
-3. `RETRIEVE_CUSTOMER_HISTORY`: Fetch tenure, LTV, success rate & prior failures.
-4. `ANALYZE_FAILURE`: Diagnose root cause category & recoverability.
-5. `PREDICT_RECOVERY`: Invoke Scikit-learn classification model.
-6. `CALCULATE_EXPECTED_RECOVERY`: Compute probability-adjusted recoverable value.
-7. `SELECT_RECOVERY_ACTION`: Determine optimal strategy (`RETRY_PAYMENT`, `SEND_REMINDER`, etc.).
-8. `CHECK_APPROVAL_POLICY`: Apply enterprise governance rules (Auto vs Human Approval).
-9. `EXECUTE_ACTION`: Trigger sandboxed recovery attempt.
-10. `VERIFY_RECOVERY`: Verify transaction resolution status.
-11. `CREATE_AUDIT_LOG`: Write immutable execution record.
+1. `DETECT_BATCH_OPPORTUNITIES`: Identify all failed transactions in batch & calculate total revenue at risk.
+2. `INVESTIGATE_BATCH_TRANSACTIONS`: Retrieve transaction metadata & gateway failure codes.
+3. `RETRIEVE_CUSTOMER_HISTORIES`: Retrieve customer tenure, historical success rate, LTV & engagement score.
+4. `ANALYZE_FAILURE_REASONS`: Categorize root cause failure diagnostics.
+5. `PREDICT_BATCH_RECOVERIES`: Compute ML recovery probability using Scikit-Learn `GradientBoostingClassifier`.
+6. `CALCULATE_EXPECTED_RECOVERIES`: Compute Expected Recovery ($Amount \times Probability$).
+7. `PRIORITIZE_BATCH_OPPORTUNITIES`: Rank opportunities by Expected Recovery (Highest first).
+8. `APPLY_POLICY_CHECKS`: Evaluate enterprise governance rules (Auto-allow vs Human Approval).
+9. `EXECUTE_BOUNDED_RECOVERIES`: Execute bounded retries with safe stopping rules (Max 3 attempts).
+10. `VERIFY_BATCH_RESULTS`: Verify recovery success and populate `actual_recovered` funds.
+11. `CALCULATE_ACTUAL_MONEY_RECOVERED`: Compute aggregate Actual Recovered revenue & Recovery Rate %.
+12. `CREATE_BATCH_AUDIT_LOGS`: Write immutable audit trail entries.
 
 ---
 
-## 7. Agent Tools
-
-1. `get_transaction_details`: Query transaction metadata from database.
-2. `get_customer_history`: Query customer LTV, tenure, and historical success rate.
-3. `analyze_failure_reason`: Classify root cause and recoverability tier.
-4. `predict_recovery_probability`: Run trained Scikit-learn model inference.
-5. `calculate_expected_recovery`: Calculate $amount \times probability$.
-6. `select_recovery_action`: Map failure diagnostics to optimal recovery action.
-7. `check_approval_policy`: Evaluate transaction value against governance thresholds.
-8. `execute_recovery_action`: Execute sandboxed simulated recovery action.
-9. `verify_recovery`: Verify transaction status in database.
-10. `create_audit_log`: Insert immutable record into `audit_logs` table.
-
----
-
-## 8. ML Methodology
-
-- **Pipeline:** `ColumnTransformer` with `StandardScaler` for numerical features and `OneHotEncoder` for categorical features.
-- **Model Selection:** Compared `RandomForestClassifier`, `GradientBoostingClassifier`, and `LogisticRegression`. Selected `GradientBoostingClassifier` based on highest test F1-score (`0.8490`).
-- **Data Leakage Prevention:** 80/20 stratified train/test split. Preprocessor fit strictly on training set.
-- **Saved Model Artifact:** `ml/model.pkl` & `ml/metrics.json`.
-
----
-
-## 9. Dataset
-
-- **Synthetic Transaction Dataset (`ml/data/synthetic_transactions.csv`):** 50,000 records.
-- **Features (11):** `transaction_amount`, `payment_method`, `failure_reason`, `customer_tenure`, `historical_payment_success`, `previous_failures`, `customer_lifetime_value`, `engagement_score`, `churn_probability`, `days_since_previous_payment`, `transaction_history`.
-- **Target:** `recovered` (Binary 0 or 1).
-
----
-
-## 10. Database
+## 7. Database Models
 
 Built using SQLAlchemy ORM (SQLite `noworry_ai.db` or PostgreSQL / Supabase):
 1. `customers`: Customer profiles, LTV, tenure, success rates.
 2. `transactions`: Transaction records, amounts, payment methods, failure codes.
-3. `recovery_opportunities`: Revenue opportunities tracked by status.
-4. `recovery_actions`: History of executed recovery actions.
-5. `ai_predictions`: Saved ML inference predictions and feature vectors.
-6. `agent_runs`: Agent execution logs and state machine statuses.
-7. `audit_logs`: Immutable audit trail entries.
+3. `recovery_opportunities`: Revenue opportunities tracked by status, `expected_recovery`, `actual_recovered`, `attempts_count`, `max_attempts`, `escalated`.
+4. `batch_runs`: Batch execution metrics (`revenue_at_risk`, `expected_recovery`, `actual_recovered`, `recovery_rate`, `successful_recoveries`, `escalated_count`).
+5. `recovery_actions`: History of executed recovery actions.
+6. `ai_predictions`: Saved ML inference predictions.
+7. `agent_runs`: Agent execution logs and state machine statuses.
+8. `audit_logs`: Immutable audit trail entries tracking `batch_id`, `ml_probability`, `expected_recovery`, `actual_recovered_amount`, `policy_decision`, `escalation_status`.
 
 ---
 
-## 11. API
+## 8. API Endpoints
 
 FastAPI REST API endpoints (`/api/v1`):
-- `GET /` — Health check
+- `POST /api/v1/batch/seed-demo` — Seed 100-transaction demo batch anchored by `TX-10492`
+- `POST /api/v1/batch/create` — Initialize new batch run
+- `POST /api/v1/batch/{batch_id}/run` — Execute 12-step autonomous batch recovery engine
+- `GET /api/v1/batch/{batch_id}` — Get batch status & metrics
+- `GET /api/v1/batch/{batch_id}/opportunities` — Get prioritized batch opportunities
+- `POST /api/v1/batch/{batch_id}/approve` — Human-in-the-loop batch item approval
+- `GET /api/v1/batch/metrics` — Get global batch recovery performance metrics
+- `GET /api/v1/batch/{batch_id}/audit` — Get batch audit trail
+- `POST /api/v1/agent/run` — Trigger single transaction workflow (TX-10492)
+- `POST /api/v1/agent/approve` — Human approval for single transaction
 - `GET /api/v1/dashboard/summary` — Executive KPIs
-- `GET /api/v1/dashboard/charts` — Daily trend and cause distributions
-- `GET /api/v1/opportunities` — Paginated opportunities grid
-- `GET /api/v1/opportunities/{id}` — Opportunity detail view
-- `POST /api/v1/agent/run` — Trigger/resume multi-step agent workflow
-- `POST /api/v1/agent/approve` — Human operator sign-off
-- `GET /api/v1/actions` — Recovery action execution history
-- `GET /api/v1/analytics/metrics` — Segment analytics
-- `POST /api/v1/roi/calculate` — Formula-driven ROI calculator
-- `GET /api/v1/audit` — Immutable audit logs
-- `POST /api/v1/demo/reset` — Reset environment & seed TX-10492
+- `GET /api/v1/opportunities` — Opportunity grid
+- `GET /api/v1/analytics/metrics` — Analytics breakdown
+- `POST /api/v1/roi/calculate` — ROI calculator
 
 ---
 
-## 12. Browser Extension
+## 9. Testing
 
-- **Manifest Version:** Manifest V3 (Chrome & Edge compatible)
-- **Directory:** `extension/` (Build output: `extension/dist/`)
-- **Features:** Popup UI, live metrics, top opportunity card (`TX-10492`), 11-step visual stepper, context menu (`"Analyze with NoWorry AI"`), desktop notifications, controlled merchant page content script (`/demo-merchant`), configurable settings.
-
----
-
-## 13. Installation
+Run full automated test suite (25 integration & unit tests):
 
 ```bash
-# Clone repository
-git clone https://github.com/your-org/noworry-ai.git
-cd noworry-ai
-
-# Set up Python virtual environment
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
-
-# Install backend dependencies
-pip install -r backend/requirements.txt
-
-# Install frontend dependencies
-cd frontend
-npm install
-cd ..
-
-# Install extension dependencies
-cd extension
-npm install
-cd ..
+set PYTHONPATH=.
+pytest tests/
 ```
 
+Test coverage includes:
+- Single-transaction workflow (`TX-10492`)
+- 100-transaction demo batch seeding
+- BatchAgentEngine 12-step execution
+- Expected vs Actual recovery calculation
+- Safe bounded retry stopping rules
+- Escalation state handling
+- Human-in-the-loop approval gating
+- Audit trail logging & metrics calculation
+- Auth & RBAC checks
+
 ---
 
-## 14. Local Development
+## 10. Local Development
 
 ```bash
-# 1. Train ML model & Seed database (Terminal 1)
+# 1. Train ML model & Seed 100-Tx Demo Batch (Terminal 1)
 set PYTHONPATH=.
 python -m ml.train
-python -m data.seed_demo_data
+python data/seed_batch_recovery.py
 
 # 2. Start FastAPI Backend (Port 8000)
 python -m uvicorn backend.app.main:app --port 8000
@@ -214,90 +188,12 @@ python -m uvicorn backend.app.main:app --port 8000
 # 3. Start Next.js Frontend (Terminal 2, Port 3000)
 cd frontend
 npm run dev
-
-# 4. Build Chrome Extension (Terminal 3)
-cd extension
-npm run build
 ```
 
 ---
 
-## 15. Environment Variables
-
-Create `.env` file based on `.env.example`:
-
-```ini
-PORT=8000
-HOST=0.0.0.0
-ENVIRONMENT=development
-LOG_LEVEL=INFO
-DEBUG=false
-
-# SQLite default or PostgreSQL / Supabase
-DATABASE_URL=sqlite:///./noworry_ai.db
-ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-
-LLM_PROVIDER=deterministic
-GEMINI_API_KEY=
-OPENAI_API_KEY=
-
-MODEL_DIR=ml/models
-SYNTHETIC_DATA_SIZE=50000
-
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-```
-
----
-
-## 16. Testing
-
-Run full automated test suite (15 integration & unit tests):
-
-```bash
-set PYTHONPATH=.
-pytest tests/
-```
-
----
-
-## 17. Demo Workflow (TX-10492)
-
-1. Open **`http://localhost:3000/dashboard`**.
-2. Click **Launch Agent Execution** (or click **Run Agent** on transaction **TX-10492**).
-3. Watch the agent execute steps 1 through 8.
-4. Observe policy check gating at step 8 ($\ge ₹1,000 \implies WAITING\_APPROVAL$).
-5. Click **Approve & Resume Agent** to approve recovery (`RETRY_PAYMENT` $\rightarrow$ `SUCCESS`).
-6. Observe status transition to `RECOVERED` and audit log creation.
-7. Open `http://localhost:3000/demo-merchant` to test the extension content script button.
-
----
-
-## 18. Business Impact
+## 11. Business Impact
 
 - **Average Recovery Lift:** $40\%$ to $65\%$ increase in recovered recurring revenue.
 - **ROI Multiplier:** $4.0\times$ to $6.5\times$ ROI over manual support dunning.
 - **Time to Recovery:** Reduced from days/weeks to seconds.
-
----
-
-## 19. Deployment
-
-### Backend Deployment (Docker / Render / Fly.io)
-```bash
-docker build -t noworry-ai-backend -f backend/Dockerfile .
-docker run -p 8000:8000 -e ENVIRONMENT=production noworry-ai-backend
-```
-
-### Frontend Deployment (Vercel)
-Set root directory to `frontend` and environment variable `NEXT_PUBLIC_API_URL` to production backend API URL.
-
-### Database Deployment (Supabase / PostgreSQL)
-Set `DATABASE_URL` in backend environment to Supabase PostgreSQL connection string.
-
----
-
-## 20. Future Improvements
-
-- Live Webhook integration for real-time Stripe / Razorpay event ingestion.
-- Server-Sent Events (SSE) for streaming agent step logs in real time.
-- Multi-tenant Role-Based Access Control (RBAC).

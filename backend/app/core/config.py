@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     
     MODEL_DIR: str = "ml/models"
     SYNTHETIC_DATA_SIZE: int = 50000
+    MAX_RECOVERY_ATTEMPTS: int = 3
 
     @property
     def cors_origins(self) -> List[str]:

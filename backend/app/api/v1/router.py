@@ -8,7 +8,8 @@ from backend.app.api.v1.endpoints import (
     analytics,
     roi,
     audit,
-    demo
+    demo,
+    batch_recovery
 )
 
 api_router = APIRouter()
@@ -22,3 +23,4 @@ api_router.include_router(analytics.router, prefix="/analytics", tags=["analytic
 api_router.include_router(roi.router, prefix="/roi", tags=["roi"])
 api_router.include_router(audit.router, prefix="/audit", tags=["audit"])
 api_router.include_router(demo.router, prefix="/demo", tags=["demo"])
+api_router.include_router(batch_recovery.router, prefix="/batch", tags=["batch_recovery"])

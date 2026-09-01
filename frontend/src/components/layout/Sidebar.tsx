@@ -11,11 +11,13 @@ import {
   Calculator, 
   FileText, 
   Settings, 
-  ShieldCheck 
+  ShieldCheck,
+  Layers
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Batch Recovery", href: "/batch-recovery", icon: Layers },
   { name: "Opportunities", href: "/opportunities", icon: TrendingUp },
   { name: "AI Recovery Agent", href: "/agent", icon: Bot },
   { name: "Recovery Actions", href: "/actions", icon: Zap },

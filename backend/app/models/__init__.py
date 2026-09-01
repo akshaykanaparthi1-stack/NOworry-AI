@@ -6,6 +6,7 @@ from backend.app.models.prediction import AIPrediction
 from backend.app.models.agent_run import AgentRun
 from backend.app.models.audit_log import AuditLog
 from backend.app.models.profile import Profile
+from backend.app.models.batch_run import BatchRun
 
 __all__ = [
     "Customer",
@@ -15,5 +16,6 @@ __all__ = [
     "AIPrediction",
     "AgentRun",
     "AuditLog",
-    "Profile"
+    "Profile",
+    "BatchRun"
 ]

@@ -31,7 +31,7 @@ Base = declarative_base()
 def init_db_schema():
     global engine, SessionLocal, Base
     from backend.app.models import (
-        Customer, Transaction, RecoveryOpportunity, RecoveryAction, AIPrediction, AgentRun, AuditLog, Profile
+        Customer, Transaction, RecoveryOpportunity, RecoveryAction, AIPrediction, AgentRun, AuditLog, Profile, BatchRun
     )
     try:
         Base.metadata.create_all(bind=engine)
