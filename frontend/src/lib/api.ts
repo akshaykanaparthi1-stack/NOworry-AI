@@ -1,13 +1,18 @@
 function getBaseUrl(): string {
-  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-    if (!process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
       return "https://noworry-ai-api.onrender.com/api/v1";
     }
   }
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  let envUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  if (envUrl.startsWith("http://noworry-ai-api.onrender.com")) {
+    envUrl = envUrl.replace("http://", "https://");
+  }
+  return envUrl;
 }
 
-export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+export async function fetchApi<T>(endpoint: string, options?: RequestInit, retries = 2): Promise<T> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}${endpoint}`;
   
@@ -25,31 +30,44 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
     ...(options?.headers as Record<string, string> || {}),
   };
 
-  const res = await fetch(url, {
-    ...options,
-    headers,
-    cache: "no-store",
-  });
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      cache: "no-store",
+    });
 
-  if (res.status === 401 && typeof window !== "undefined" && !endpoint.includes("/auth/")) {
-    localStorage.removeItem("noworry_auth_token");
-    localStorage.removeItem("noworry_auth_user");
-    window.location.href = "/login";
-  }
-
-  if (!res.ok) {
-    const errText = await res.text();
-    let parsedErr = `API Error ${res.status}`;
-    try {
-      const jsonErr = JSON.parse(errText);
-      parsedErr = jsonErr.detail || parsedErr;
-    } catch {
-      parsedErr = errText || parsedErr;
+    if (res.status === 401 && typeof window !== "undefined" && !endpoint.includes("/auth/")) {
+      localStorage.removeItem("noworry_auth_token");
+      localStorage.removeItem("noworry_auth_user");
+      window.location.href = "/login";
     }
-    throw new Error(parsedErr);
-  }
 
-  return res.json();
+    if (!res.ok) {
+      if (res.status >= 502 && res.status <= 504 && retries > 0) {
+        await new Promise((r) => setTimeout(r, 2000));
+        return fetchApi<T>(endpoint, options, retries - 1);
+      }
+      const errText = await res.text();
+      let parsedErr = `API Error ${res.status}`;
+      try {
+        const jsonErr = JSON.parse(errText);
+        parsedErr = jsonErr.detail || parsedErr;
+      } catch {
+        parsedErr = errText || parsedErr;
+      }
+      throw new Error(parsedErr);
+    }
+
+    return res.json();
+  } catch (err: any) {
+    if (retries > 0 && err.name === "TypeError") {
+      // Automatic retry for Render cold start or transient network glitch
+      await new Promise((r) => setTimeout(r, 2500));
+      return fetchApi<T>(endpoint, options, retries - 1);
+    }
+    throw err;
+  }
 }
 
 export interface UserProfile {
