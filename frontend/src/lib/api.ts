@@ -1,17 +1,27 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+function getBaseUrl(): string {
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    if (!process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
+      return "https://noworry-ai-api.onrender.com/api/v1";
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+}
 
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
   
-  // Attach token from localStorage if available
+  // Attach token from localStorage if available, or fallback role token
   let token: string | null = null;
   if (typeof window !== "undefined") {
-    token = localStorage.getItem("noworry_auth_token");
+    token = localStorage.getItem("noworry_auth_token") || localStorage.getItem("token") || "role_token_OPERATOR";
+  } else {
+    token = "role_token_OPERATOR";
   }
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    "Authorization": `Bearer ${token}`,
     ...(options?.headers as Record<string, string> || {}),
   };
 
